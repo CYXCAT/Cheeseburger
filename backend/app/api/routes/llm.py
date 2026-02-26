@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.repositories import KBRepository
-from app.api.schemas.llm import ChatMessage, ChatRequest, ChatResponse
+from app.api.schemas.llm import ChatMessage, ChatRequest, ChatResponse, CitationChunk
 from app.services.llm_tools import get_tool_definitions, execute_tool
 
 router = APIRouter()
@@ -88,12 +88,14 @@ async def chat(
         return ChatResponse(
             message=ChatMessage(role="assistant", content=msg.content or ""),
             tool_calls=None,
+            citation_chunks=None,
         )
 
     # 执行所有工具调用，把结果追加到对话，再请求一次 completion
     logger.info("chat tool_calls: kb_id=%s count=%s names=%s", body.kb_id, len(tool_calls), [getattr(t, "function", None) and getattr(t.function, "name", None) for t in tool_calls])
     tool_calls_payload = []
     tool_results = []
+    all_chunks: list[dict] = []
     for tc in tool_calls:
         name = getattr(tc, "function", None) and getattr(tc.function, "name", None)
         args_str = getattr(tc.function, "arguments", None) or "{}"
@@ -103,6 +105,14 @@ async def chat(
             args = {}
         result = execute_tool(body.kb_id, name or "", args)
         logger.info("execute_tool: name=%s query=%s result_count=%s", name, args.get("query"), len(result))
+        for r in result[:10]:
+            meta = r.get("metadata") or {}
+            all_chunks.append({
+                "chunk_text": r.get("chunk_text") or "",
+                "source_id": meta.get("source_id"),
+                "source_type": meta.get("source_type"),
+                "metadata": meta,
+            })
         result_text = json.dumps(
             [{"chunk_text": r.get("chunk_text"), "score": r.get("score"), "id": r.get("id")} for r in result[:10]],
             ensure_ascii=False,
@@ -120,9 +130,11 @@ async def chat(
     final_choice = final.choices[0] if final.choices else None
     if not final_choice:
         raise HTTPException(502, "Empty model response after tool use")
+    citation_chunks = [CitationChunk(**c) for c in all_chunks] if all_chunks else None
     return ChatResponse(
         message=ChatMessage(role="assistant", content=final_choice.message.content or ""),
         tool_calls=[{"name": getattr(tc.function, "name", None), "arguments": getattr(tc.function, "arguments", None)} for tc in tool_calls],
+        citation_chunks=citation_chunks,
     )
 
 

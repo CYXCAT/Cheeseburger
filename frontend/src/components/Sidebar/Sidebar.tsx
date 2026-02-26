@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { useKbChat } from '../../contexts/KbChatContext'
+// @ts-expect-error: CSS module missing type declaration
 import styles from './Sidebar.module.css'
 
 export interface HistoryItem {
@@ -31,8 +32,8 @@ export function Sidebar({
   history: historyProp,
   userName = 'User',
   userAvatar,
-  githubUrl = 'https://github.com',
-  email = 'mailto:hello@example.com',
+  githubUrl = 'https://github.com/CYXCAT/Cheeseburger',
+  email = 'mailto:yingxiao649@gmail.com',
 }: SidebarProps) {
   const { t } = useI18n()
   const navigate = useNavigate()

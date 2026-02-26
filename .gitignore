@@ -24,3 +24,5 @@ dist-ssr/
 .env.development.local
 
 pinecone-doc/
+
+/.vscode/

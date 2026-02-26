@@ -23,6 +23,8 @@ export interface Message {
   citations?: Citation[]
   /** 本条回复所调用的工具（由后端返回，用于在对话中展示） */
   tool_calls?: ToolCallDisplay[] | null
+  /** Agent 检索返回的片段，用于左侧预览高亮 */
+  citation_chunks?: Array<{ chunk_text: string; source_id?: string | null; source_type?: string | null; metadata?: Record<string, unknown> }> | null
 }
 
 interface ChatPanelProps {

@@ -16,6 +16,28 @@ const defaultDocSource: DocSource = {
   html: '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;padding:1.5rem;line-height:1.6;} h1{color:#2c2c2c;} .page{padding:1rem 0;border-bottom:1px solid #eae6df;}</style></head><body><h1>检索与预览</h1><p>在下方输入关键词进行语义/关键词/混合检索，或直接与右侧对话（对话将自动调用知识库检索）。</p></body></html>',
 }
 
+/** 根据 Agent 检索返回的 citation_chunks 生成左侧预览 HTML，并对片段高亮。 */
+function buildCitationDocSource(
+  chunks: Array<{ chunk_text: string; source_id?: string | null; source_type?: string | null }>
+): DocSource {
+  if (!chunks.length) return defaultDocSource
+  const style = `
+    body { font-family: system-ui; padding: 1rem 1.5rem; line-height: 1.6; }
+    .cite-block { padding: 0.75rem 1rem; margin: 0.5rem 0; border-radius: 6px; border-left: 3px solid #e0e0e0; background: #fafafa; }
+    .cite-block.highlight { background: #fff8e6; border-left-color: #d4a012; }
+    .cite-meta { font-size: 0.75rem; color: #666; margin-bottom: 0.35rem; }
+  `
+  const body = chunks
+    .map((c, i) => {
+      const meta = [c.source_type, c.source_id].filter(Boolean).join(' · ') || '检索片段'
+      const cls = i === 0 ? 'cite-block highlight' : 'cite-block'
+      return `<div id="cite-${i}" class="${cls}"><span class="cite-meta">${escapeHtml(meta)}</span><p>${escapeHtml(c.chunk_text)}</p></div>`
+    })
+    .join('')
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${style}</style></head><body><h2>引用片段</h2>${body}</body></html>`
+  return { type: 'web', html }
+}
+
 export function KbPage() {
   const { kbId } = useParams<{ kbId: string }>()
   const navigate = useNavigate()
@@ -34,6 +56,15 @@ export function KbPage() {
   const messages = chat?.messages ?? []
   const setMessages = chat?.setMessages ?? (() => {})
   const loading = (chat?.loading ?? false) || sendLoading
+
+  // 当最后一条 assistant 消息带有 citation_chunks 时，左侧展示检索片段并高亮第一段
+  const lastCitationMessage = messages.slice().reverse().find((m) => m.role === 'assistant' && m.citation_chunks?.length)
+  useEffect(() => {
+    if (lastCitationMessage?.citation_chunks?.length) {
+      setDocSource(buildCitationDocSource(lastCitationMessage.citation_chunks))
+      setHighlight({ selector: '#cite-0' })
+    }
+  }, [lastCitationMessage?.id, lastCitationMessage?.citation_chunks?.length])
 
   useEffect(() => {
     if (Number.isNaN(id)) return
@@ -58,6 +89,7 @@ export function KbPage() {
         role: 'assistant',
         content: res.message.content,
         tool_calls: res.tool_calls ?? undefined,
+        citation_chunks: res.citation_chunks ?? undefined,
       }
       setMessages((prev) => [...prev, reply])
       let convId = chat.currentConversationId

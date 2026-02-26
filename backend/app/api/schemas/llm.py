@@ -15,6 +15,15 @@ class ChatRequest(BaseModel):
     stream: bool = False
 
 
+class CitationChunk(BaseModel):
+    """Agent 检索工具返回的片段，用于左侧预览高亮。"""
+    chunk_text: str = ""
+    source_id: str | None = None
+    source_type: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class ChatResponse(BaseModel):
     message: ChatMessage
     tool_calls: list[dict[str, Any]] | None = None
+    citation_chunks: list[CitationChunk] | None = None

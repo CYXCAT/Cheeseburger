@@ -57,9 +57,17 @@ export interface ChatMessage {
   content: string
 }
 
+export interface CitationChunk {
+  chunk_text: string
+  source_id?: string | null
+  source_type?: string | null
+  metadata?: Record<string, unknown>
+}
+
 export interface ChatResponse {
   message: ChatMessage
   tool_calls: Array<{ name?: string; arguments?: string }> | null
+  citation_chunks?: CitationChunk[] | null
 }
 
 export interface ToolInfo {
