@@ -1,5 +1,5 @@
-# 构建并推送 Docker 镜像到 GitHub Container Registry (ghcr.io)
-# 推送 main/master 或 tag 时触发；镜像可用于任意环境 pull 后部署
+# 构建并推送单镜像到 GitHub Container Registry (ghcr.io)
+# 单镜像包含前端(nginx) + 后端(uvicorn)，推送 main/master 或 tag 时触发
 name: Docker build and publish
 
 on:
@@ -12,8 +12,8 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  build-backend:
-    name: Build backend image
+  build:
+    name: Build and push single image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,54 +38,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}/backend:latest
-            ${{ env.REGISTRY }}/${{ github.repository }}/backend:${{ steps.meta.outputs.sha }}
-            ${{ steps.meta.outputs.version != '' && format('{0}/{1}/backend:{2}', env.REGISTRY, github.repository, steps.meta.outputs.version) || '' }}
-          cache-from: type=gha
-          cache-to: type=gha
-
-  build-frontend:
-    name: Build frontend image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set image metadata
-        id: meta
-        run: |
-          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "version=" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}/frontend:latest
-            ${{ env.REGISTRY }}/${{ github.repository }}/frontend:${{ steps.meta.outputs.sha }}
-            ${{ steps.meta.outputs.version != '' && format('{0}/{1}/frontend:{2}', env.REGISTRY, github.repository, steps.meta.outputs.version) || '' }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/app:latest
+            ${{ env.REGISTRY }}/${{ github.repository }}/app:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.version != '' && format('{0}/{1}/app:{2}', env.REGISTRY, github.repository, steps.meta.outputs.version) || '' }}
           cache-from: type=gha
           cache-to: type=gha

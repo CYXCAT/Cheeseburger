@@ -1,0 +1,18 @@
+# 根目录构建单镜像时忽略
+.git
+.github
+*.md
+.env
+.env.*
+node_modules
+frontend/node_modules
+frontend/dist
+backend/__pycache__
+backend/*.pyc
+backend/.venv
+backend/venv
+backend/app.db
+# 保留根目录 Dockerfile 与 docker-compose 供构建使用
+backend/Dockerfile
+frontend/Dockerfile
+.dockerignore
