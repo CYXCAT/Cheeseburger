@@ -28,6 +28,7 @@ jobs:
         id: meta
         run: |
           echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           else
@@ -48,8 +49,8 @@ jobs:
           file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}/app:latest
-            ${{ env.REGISTRY }}/${{ github.repository }}/app:${{ steps.meta.outputs.sha }}
-            ${{ steps.meta.outputs.version != '' && format('{0}/{1}/app:{2}', env.REGISTRY, github.repository, steps.meta.outputs.version) || '' }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo }}/app:latest
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo }}/app:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.version != '' && format('{0}/{1}/app:{2}', env.REGISTRY, steps.meta.outputs.repo, steps.meta.outputs.version) || '' }}
           cache-from: type=gha
           cache-to: type=gha
