@@ -1,0 +1,133 @@
+import React, { useState, useRef, useEffect } from 'react'
+import { useI18n } from '../../i18n'
+import type { HighlightRegion } from '../DocumentPanel'
+import styles from './ChatPanel.module.css'
+
+export interface Citation {
+  id: string
+  text: string
+  /** 用于跳转定位到文档 */
+  region: HighlightRegion
+  sourceLabel?: string
+}
+
+export interface ToolCallDisplay {
+  name?: string
+  arguments?: string
+}
+
+export interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  citations?: Citation[]
+  /** 本条回复所调用的工具（由后端返回，用于在对话中展示） */
+  tool_calls?: ToolCallDisplay[] | null
+}
+
+interface ChatPanelProps {
+  messages: Message[]
+  onSend: (content: string) => void
+  /** 点击引用时跳转到文档对应位置 */
+  onCitationClick?: (region: HighlightRegion) => void
+  loading?: boolean
+}
+
+export function ChatPanel({
+  messages,
+  onSend,
+  onCitationClick,
+  loading = false,
+}: ChatPanelProps) {
+  const { t } = useI18n()
+  const [input, setInput] = useState('')
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages, loading])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = input.trim()
+    if (!trimmed) return
+    onSend(trimmed)
+    setInput('')
+  }
+
+  return (
+    <div className={styles.wrap}>
+      <div className={styles.messages} ref={listRef}>
+        {messages.length === 0 && (
+          <div className={styles.placeholder}>{t.chat.placeholder}</div>
+        )}
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={styles.message}
+            data-role={msg.role}
+          >
+            <div className={styles.bubble}>
+              {msg.role === 'assistant' && msg.tool_calls && msg.tool_calls.length > 0 && (
+                <div className={styles.toolCalls}>
+                  <span className={styles.toolCallsLabel}>{t.chat.toolCallsLabel}</span>
+                  {msg.tool_calls.map((tc, i) => {
+                    let argsPreview = ''
+                    try {
+                      const args = typeof tc.arguments === 'string' ? JSON.parse(tc.arguments) : tc.arguments
+                      if (args && typeof args.query === 'string') argsPreview = args.query
+                    } catch {
+                      argsPreview = typeof tc.arguments === 'string' ? tc.arguments.slice(0, 80) : ''
+                    }
+                    return (
+                      <div key={i} className={styles.toolCallItem}>
+                        <span className={styles.toolCallName}>{tc.name ?? '—'}</span>
+                        {argsPreview && <span className={styles.toolCallArgs}>查询: {argsPreview}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              <div className={styles.content}>{msg.content}</div>
+              {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
+                <div className={styles.citations}>
+                  <span className={styles.citationsLabel}>{t.chat.source}</span>
+                  {msg.citations.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={styles.citation}
+                      onClick={() => onCitationClick?.(c.region)}
+                    >
+                      {c.sourceLabel ?? c.text}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className={styles.message} data-role="assistant">
+            <div className={styles.bubble}>
+              <span className={styles.thinking}>{t.chat.thinking}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder={t.chat.placeholder}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          aria-label={t.chat.placeholder}
+        />
+        <button type="submit" className={styles.send} aria-label={t.chat.send}>
+          {t.chat.send}
+        </button>
+      </form>
+    </div>
+  )
+}

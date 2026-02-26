@@ -1,0 +1,1 @@
+export { CreateKbModal } from './CreateKbModal'

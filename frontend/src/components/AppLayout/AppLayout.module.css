@@ -1,0 +1,30 @@
+.root {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--transition-normal);
+}
+
+/* 有侧栏时为主内容留出左侧空间（侧栏 fixed 不占流） */
+.main[data-sidebar-open='true'] {
+  margin-left: var(--sidebar-width);
+}
+
+@media (min-width: 768px) {
+  .main[data-sidebar-open='false'] {
+    margin-left: var(--sidebar-collapsed);
+  }
+}
+
+@media (max-width: 767px) {
+  .main[data-sidebar-open='true'],
+  .main[data-sidebar-open='false'] {
+    margin-left: 0;
+  }
+}

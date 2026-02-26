@@ -1,0 +1,1 @@
+export { KbManagePage } from './KbManagePage'

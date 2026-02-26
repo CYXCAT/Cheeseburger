@@ -1,0 +1,23 @@
+# Web
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# DB（SQLAlchemy 2 提供 async_sessionmaker）
+sqlalchemy[asyncio]>=2.0.0
+aiosqlite>=0.20.0
+
+# Pinecone（参考 pinecone-doc：create_index_for_model / upsert_records / search）
+pinecone>=5.0.0
+
+# 文档解析
+pypdf2>=3.0.0
+pdfplumber>=0.11.0
+requests>=2.32.0
+beautifulsoup4>=4.12.0
+
+# LLM 与工具调用
+openai>=1.55.0
+
+# 工具
+python-multipart>=0.0.12
+pydantic-settings>=2.0.0

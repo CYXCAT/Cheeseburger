@@ -1,0 +1,37 @@
+/**
+ * 设计规范：色彩控制在 3–4 种，白色为主、浅暖色为辅
+ * Design tokens - reusable across components
+ */
+:root {
+  /* 主色：白与浅暖 */
+  --color-bg: #ffffff;
+  --color-surface: #faf8f5;
+  --color-surface-hover: #f5f0e8;
+  --color-accent: #e8dcc8;
+  --color-accent-strong: #c9b896;
+  --color-border: #eae6df;
+
+  /* 文字 */
+  --color-text: #2c2c2c;
+  --color-text-muted: #6b6b6b;
+  --color-text-inverse: #ffffff;
+
+  /* 高亮（引用/选中） */
+  --color-highlight: rgba(201, 184, 150, 0.35);
+  --color-highlight-border: #c9b896;
+
+  /* 尺寸规范 */
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 56px;
+  --header-height: 56px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  /* 动效 */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 0.15s var(--ease-out);
+  --transition-normal: 0.25s var(--ease-out);
+}

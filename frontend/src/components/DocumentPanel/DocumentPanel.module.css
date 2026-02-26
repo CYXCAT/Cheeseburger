@@ -1,0 +1,67 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.toolbar {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.pages {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.pageWrap {
+  margin-bottom: 1rem;
+}
+
+.pageWrap[data-highlight='true'] {
+  outline: 2px solid var(--color-highlight-border);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.pageWrap :global(.react-pdf__Page__canvas) {
+  max-width: 100%;
+  height: auto;
+}
+
+.iframe {
+  width: 100%;
+  min-height: 600px;
+  border: none;
+  border-radius: var(--radius-sm);
+}
+
+.highlightOverlay {
+  pointer-events: none;
+}

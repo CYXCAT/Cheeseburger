@@ -1,0 +1,54 @@
+import type { I18nDict } from './types'
+
+export const zh: I18nDict = {
+  nav: {
+    title: 'Cheeseburger',
+    subtitle: '选择知识库开始问询',
+    selectKb: '选择知识库',
+    newChat: '新对话',
+    createKb: '创建知识库',
+    manage: '管理',
+  },
+  sidebar: {
+    history: '历史记录',
+    newChat: '新对话',
+    user: '用户',
+    deleteItem: '删除',
+  },
+  chat: {
+    placeholder: '输入您的问题…',
+    send: '发送',
+    thinking: '思考中…',
+    source: '引用来源',
+    jumpToDoc: '跳转到文档',
+    toolCallsLabel: '已调用工具',
+  },
+  doc: {
+    pdf: 'PDF 预览',
+    webSnapshot: '网页快照',
+    page: '页',
+  },
+  common: {
+    back: '返回',
+    loading: '加载中…',
+    cancel: '取消',
+    confirm: '确认',
+    save: '保存',
+    nameRequired: '请输入名称',
+    errorGeneric: '操作失败',
+  },
+  manage: {
+    title: '知识库管理',
+    uploadPdf: '上传 PDF',
+    uploadUrl: '录入网址',
+    uploadText: '上传纯文本',
+    preview: '预览',
+    confirmUpload: '确认上传',
+    uploaded: '已上传',
+    deleteDoc: '删除',
+    nameLabel: '名称',
+    descLabel: '描述',
+    urlPlaceholder: 'https://example.com/page',
+    textPlaceholder: '输入要存入知识库的纯文本…',
+  },
+}
