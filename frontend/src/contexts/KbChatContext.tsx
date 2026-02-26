@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { chatApi, chatHistoryApi } from '../api'
+import { chatHistoryApi } from '../api'
 import type { ConversationOut } from '../api'
 import type { Message } from '../components/ChatPanel'
 

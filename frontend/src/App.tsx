@@ -1,4 +1,3 @@
-import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { KbChatProvider } from './contexts/KbChatContext'

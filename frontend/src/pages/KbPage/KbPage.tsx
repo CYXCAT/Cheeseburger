@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { LangSwitch } from '../../components/LangSwitch'
@@ -51,7 +51,7 @@ export function KbPage() {
   const [sendLoading, setSendLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [_searchResults, setSearchResults] = useState<SearchResult[]>([])
 
   const messages = chat?.messages ?? []
   const setMessages = chat?.setMessages ?? (() => {})

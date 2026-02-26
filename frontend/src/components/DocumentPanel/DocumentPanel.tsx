@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { useI18n } from '../../i18n'
 import styles from './DocumentPanel.module.css'
@@ -38,7 +38,7 @@ interface DocumentPanelProps {
 export function DocumentPanel({
   source,
   highlight,
-  onNavigate,
+  onNavigate: _onNavigate,
   currentPage = 1,
   onPageChange,
 }: DocumentPanelProps) {

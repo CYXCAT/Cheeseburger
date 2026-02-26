@@ -18,10 +18,12 @@ function getUserId(): string {
   return localStorage.getItem('doc_user_id') || 'anonymous'
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit & { body?: object; formData?: FormData } = {}
-): Promise<T> {
+type RequestOptions = Omit<RequestInit, 'body'> & {
+  body?: object
+  formData?: FormData
+}
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, formData, ...rest } = options
   const headers = new Headers(rest.headers as HeadersInit)
   headers.set('X-User-Id', getUserId())

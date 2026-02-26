@@ -1,8 +1,6 @@
-import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { useKbChat } from '../../contexts/KbChatContext'
-// @ts-expect-error: CSS module missing type declaration
 import styles from './Sidebar.module.css'
 
 export interface HistoryItem {

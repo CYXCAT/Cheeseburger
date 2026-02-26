@@ -1,4 +1,3 @@
-import React from 'react'
 import { useI18n } from '../../i18n'
 import type { Locale } from '../../i18n'
 import styles from './LangSwitch.module.css'
