@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     app_name: str = "doc-kb-api"
     debug: bool = False
 
-    # 数据库（SQLite 便于本地开发，可换成 POSTGRES_DSN）
+    # 数据库（默认 SQLite；设 DATABASE_URL 为 Supabase 连接串即切到 Postgres）
     database_url: str = "sqlite+aiosqlite:///./app.db"
 
     # Pinecone（参考 pinecone-doc）
@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str | None = None  # 可指向本地或第三方
     llm_model: str = "gpt-4o-mini"
+
+    # JWT
+    jwt_secret: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
+
+    # 邀请链接前端 base（仅用于 scripts/generate_invites.py 打印完整链接）
+    invite_base_url: str = ""
 
     class Config:
         env_file = ".env"

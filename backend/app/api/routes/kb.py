@@ -1,24 +1,19 @@
 """知识库与版本 REST：创建/列表/更新/删除知识库，版本列表。"""
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.api.deps import get_current_user_id
 from app.repositories import KBRepository
 from app.api.schemas import KBCreate, KBUpdate, KBOut, KBVersionOut
 
 router = APIRouter()
 
 
-def _user_id(x_user_id: str | None = Header(None, alias="X-User-Id")) -> str:
-    if not x_user_id:
-        raise HTTPException(401, "Missing X-User-Id header")
-    return x_user_id.strip()
-
-
 @router.post("", response_model=KBOut)
 async def create_kb(
     body: KBCreate,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     repo = KBRepository(db)
@@ -28,7 +23,7 @@ async def create_kb(
 
 @router.get("", response_model=list[KBOut])
 async def list_kbs(
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     repo = KBRepository(db)
@@ -38,7 +33,7 @@ async def list_kbs(
 @router.get("/{kb_id}", response_model=KBOut)
 async def get_kb(
     kb_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     repo = KBRepository(db)
@@ -52,7 +47,7 @@ async def get_kb(
 async def update_kb(
     kb_id: int,
     body: KBUpdate,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     repo = KBRepository(db)
@@ -65,7 +60,7 @@ async def update_kb(
 @router.delete("/{kb_id}", status_code=204)
 async def delete_kb(
     kb_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     from app.services.pinecone_service import PineconeService
@@ -79,7 +74,7 @@ async def delete_kb(
 @router.get("/{kb_id}/versions", response_model=list[KBVersionOut])
 async def list_versions(
     kb_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     repo = KBRepository(db)

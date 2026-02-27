@@ -1,5 +1,16 @@
 /** 与后端 REST 响应对齐 */
 
+export interface UserOut {
+  id: number
+  username: string
+}
+
+export interface AuthResponse {
+  access_token: string
+  token_type: string
+  user: UserOut
+}
+
 export interface KnowledgeBase {
   id: number
   user_id: string

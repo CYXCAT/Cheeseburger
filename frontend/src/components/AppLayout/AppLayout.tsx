@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { Sidebar } from '../Sidebar'
+import { useAuth } from '../../contexts/AuthContext'
 import styles from './AppLayout.module.css'
 
 interface AppLayoutProps {
@@ -10,11 +11,23 @@ interface AppLayoutProps {
 
 export function AppLayout({ showSidebar = true }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className={styles.root}>
       {showSidebar && (
-        <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((o) => !o)} />
+        <Sidebar
+          open={sidebarOpen}
+          onToggle={() => setSidebarOpen((o) => !o)}
+          userName={user?.username ?? 'User'}
+          onLogout={handleLogout}
+        />
       )}
       <main
         className={styles.main}

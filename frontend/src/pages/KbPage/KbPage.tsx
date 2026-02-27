@@ -93,7 +93,7 @@ export function KbPage() {
       }
       setMessages((prev) => [...prev, reply])
       let convId = chat.currentConversationId
-      if (convId == null) convId = await chat.createNewChat() ?? null
+      if (convId == null) convId = await chat.createNewChat(false) ?? null
       if (convId != null) await chat.appendToCurrent(convId, userMsg, reply)
     } catch (err) {
       const reply: Message = {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useI18n } from '../../i18n'
+import { useAuth } from '../../contexts/AuthContext'
 import { LangSwitch } from '../../components/LangSwitch'
 import { Card, CardTitle, CardDescription } from '../../components/Card'
 import { CreateKbModal } from '../../components/CreateKbModal'
@@ -11,6 +12,7 @@ import styles from './NavPage.module.css'
 export function NavPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const [kbs, setKbs] = useState<KnowledgeBase[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
@@ -26,6 +28,13 @@ export function NavPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <LangSwitch />
+        <div className={styles.headerAuth}>
+          <Link to="/settings" className={styles.settingsLink}>{t.sidebar.settings}</Link>
+          <span className={styles.userName}>{user?.username}</span>
+          <button type="button" className={styles.logoutBtn} onClick={() => { logout(); navigate('/login', { replace: true }) }}>
+            {t.auth.logout}
+          </button>
+        </div>
       </header>
       <div className={styles.hero}>
         <h1 className={styles.heroTitle}>{t.nav.title}</h1>

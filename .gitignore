@@ -10,18 +10,36 @@ ENV/
 *.egg-info/
 dist/
 build/
-.env
 *.log
 
 node_modules/
-dist/
 dist-ssr/
 *.local
 .DS_Store
+
 .env
+.env.*
+!.env.example
 .env.local
+.env.production
 .env.production.local
 .env.development.local
+*.pem
+*.key
+secrets.yaml
+secrets.json
+credentials
+credentials.json
+
+
+*.db
+*.sqlite
+*.sqlite3
+invite_url.txt
+*_url.txt
+
+# 脚本本身应保留在仓库，仅忽略可能误存的输出
+# （generate_invites.py 不要加入 gitignore）
 
 pinecone-doc/
 

@@ -1,21 +1,16 @@
 """文档上传（PDF/URL/纯文本）、删除、语义/关键词/混合搜索。"""
 import uuid
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Header, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.api.deps import get_current_user_id
 from app.repositories import KBRepository
 from app.services.parsers import parse_document
 from app.services.pinecone_service import PineconeService
 from app.api.schemas import DocumentUploadResponse, DocumentOut, SearchRequest, SearchResult, SearchResponse
 
 router = APIRouter()
-
-
-def _user_id(x_user_id: str | None = Header(None, alias="X-User-Id")) -> str:
-    if not x_user_id:
-        raise HTTPException(401, "Missing X-User-Id header")
-    return x_user_id.strip()
 
 
 async def _get_kb_or_404(kb_id: int, user_id: str, db: AsyncSession):
@@ -29,7 +24,7 @@ async def _get_kb_or_404(kb_id: int, user_id: str, db: AsyncSession):
 @router.get("/{kb_id}/documents/pinecone-stats")
 async def pinecone_stats(
     kb_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """验证该知识库在 Pinecone 中是否有数据（仅用于调试）。"""
@@ -40,7 +35,7 @@ async def pinecone_stats(
 @router.get("/{kb_id}/documents", response_model=list[DocumentOut])
 async def list_documents(
     kb_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -52,7 +47,7 @@ async def list_documents(
 async def upload_pdf(
     kb_id: int,
     file: UploadFile = File(...),
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -72,7 +67,7 @@ async def upload_pdf(
 async def upload_url(
     kb_id: int,
     url: str = Form(..., min_length=1),
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -89,7 +84,7 @@ async def upload_url(
 async def upload_text(
     kb_id: int,
     text: str = Form(..., min_length=1),
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -106,7 +101,7 @@ async def upload_text(
 async def delete_document(
     kb_id: int,
     source_id: str,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -119,7 +114,7 @@ async def delete_document(
 async def search(
     kb_id: int,
     body: SearchRequest,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)

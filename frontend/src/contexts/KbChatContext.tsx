@@ -11,7 +11,7 @@ export interface KbChatContextValue {
   messages: Message[]
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   loading: boolean
-  createNewChat: () => Promise<number | null>
+  createNewChat: (clearMessages?: boolean) => Promise<number | null>
   selectConversation: (conversationId: number) => Promise<void>
   deleteConversation: (conversationId: number) => Promise<void>
   appendToCurrent: (conversationId: number, userMsg: Message, assistantMsg: Message) => Promise<void>
@@ -56,12 +56,12 @@ export function KbChatProvider({ children }: { children: React.ReactNode }) {
     refreshConversations()
   }, [refreshConversations])
 
-  const createNewChat = useCallback(async (): Promise<number | null> => {
+  const createNewChat = useCallback(async (clearMessages = true): Promise<number | null> => {
     if (Number.isNaN(kbId)) return null
     try {
       const conv = await chatHistoryApi.createConversation(kbId, null)
       setCurrentConversationId(conv.id)
-      setMessages([])
+      if (clearMessages) setMessages([])
       await refreshConversations()
       return conv.id
     } catch {

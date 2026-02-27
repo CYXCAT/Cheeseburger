@@ -10,23 +10,37 @@ import type {
   ToolInfo,
   ConversationOut,
   HistoryMessageOut,
+  AuthResponse,
+  UserOut,
 } from './types'
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || ''
 
-function getUserId(): string {
-  return localStorage.getItem('doc_user_id') || 'anonymous'
+const AUTH_TOKEN_KEY = 'doc_access_token'
+
+function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY)
+}
+
+export function setAuthToken(token: string | null): void {
+  if (token == null) localStorage.removeItem(AUTH_TOKEN_KEY)
+  else localStorage.setItem(AUTH_TOKEN_KEY, token)
 }
 
 type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: object
   formData?: FormData
+  /** 为 true 时不带 Authorization（用于登录/注册） */
+  skipAuth?: boolean
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, formData, ...rest } = options
+  const { body, formData, skipAuth, ...rest } = options
   const headers = new Headers(rest.headers as HeadersInit)
-  headers.set('X-User-Id', getUserId())
+  const token = getAuthToken()
+  if (!skipAuth && token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
   if (!formData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
@@ -44,6 +58,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (res.status === 204) return undefined as T
   const text = await res.text()
   if (!res.ok) {
+    if (res.status === 401) setAuthToken(null)
     let detail = text
     try {
       const j = JSON.parse(text)
@@ -145,4 +160,27 @@ export const chatHistoryApi = {
       `/api/knowledge-bases/${kbId}/chat/conversations/${conversationId}`,
       { method: 'DELETE' }
     ),
+}
+
+/** 认证 */
+export const authApi = {
+  register: (inviteToken: string, username: string, password: string) =>
+    request<AuthResponse>('/api/auth/register', {
+      method: 'POST',
+      body: { invite_token: inviteToken, username, password },
+      skipAuth: true,
+    }),
+  login: (username: string, password: string) =>
+    request<AuthResponse>('/api/auth/login', {
+      method: 'POST',
+      body: { username, password },
+      skipAuth: true,
+    }),
+}
+
+/** 当前用户 */
+export const userApi = {
+  getMe: () => request<UserOut>('/api/users/me', { method: 'GET' }),
+  updateMe: (data: { username?: string; password?: string }) =>
+    request<UserOut>('/api/users/me', { method: 'PATCH', body: data }),
 }

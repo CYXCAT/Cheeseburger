@@ -14,6 +14,7 @@ export interface I18nDict {
     newChat: string
     user: string
     deleteItem: string
+    settings: string
   }
   chat: {
     placeholder: string
@@ -36,6 +37,33 @@ export interface I18nDict {
     save: string
     nameRequired: string
     errorGeneric: string
+  }
+  auth: {
+    login: string
+    register: string
+    logout: string
+    username: string
+    password: string
+    passwordConfirm?: string
+    inviteToken: string
+    inviteTokenRequired: string
+    loginTitle: string
+    registerTitle: string
+    noAccount: string
+    hasAccount: string
+    loginSuccess: string
+    registerSuccess: string
+    usernameRequired: string
+    passwordRequired: string
+    passwordMinLength: string
+    passwordMismatch: string
+  }
+  settings: {
+    title: string
+    username: string
+    newPassword: string
+    newPasswordConfirm: string
+    updateSuccess: string
   }
   manage: {
     title: string

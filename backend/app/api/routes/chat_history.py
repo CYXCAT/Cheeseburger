@@ -1,8 +1,9 @@
 """对话历史 REST：按知识库列出/创建/获取/删除会话，获取/追加消息。"""
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.api.deps import get_current_user_id
 from app.repositories import KBRepository, ChatRepository
 from app.api.schemas.chat_history import (
     ConversationCreate,
@@ -12,12 +13,6 @@ from app.api.schemas.chat_history import (
 )
 
 router = APIRouter()
-
-
-def _user_id(x_user_id: str | None = Header(None, alias="X-User-Id")) -> str:
-    if not x_user_id:
-        raise HTTPException(401, "Missing X-User-Id header")
-    return x_user_id.strip()
 
 
 async def _get_kb_or_404(kb_id: int, user_id: str, db: AsyncSession):
@@ -31,7 +26,7 @@ async def _get_kb_or_404(kb_id: int, user_id: str, db: AsyncSession):
 @router.get("/{kb_id}/chat/conversations", response_model=list[ConversationOut])
 async def list_conversations(
     kb_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -53,7 +48,7 @@ async def list_conversations(
 async def create_conversation(
     kb_id: int,
     body: ConversationCreate | None = None,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -73,7 +68,7 @@ async def create_conversation(
 async def get_messages(
     kb_id: int,
     conversation_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -87,7 +82,7 @@ async def append_messages(
     kb_id: int,
     conversation_id: int,
     body: AppendMessagesBody,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)
@@ -107,7 +102,7 @@ async def append_messages(
 async def delete_conversation(
     kb_id: int,
     conversation_id: int,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(kb_id, user_id, db)

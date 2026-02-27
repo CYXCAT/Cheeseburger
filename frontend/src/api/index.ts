@@ -1,5 +1,7 @@
-export { kbApi, docsApi, chatApi, chatHistoryApi } from './client'
+export { kbApi, docsApi, chatApi, chatHistoryApi, authApi, userApi, setAuthToken } from './client'
 export type {
+  UserOut,
+  AuthResponse,
   KnowledgeBase,
   KBVersion,
   DocumentUploadResponse,

@@ -25,6 +25,7 @@
 .aside[data-open='false'] .newChat span:not(.newChatIcon),
 .aside[data-open='false'] .historySection,
 .aside[data-open='false'] .footer .userName,
+.aside[data-open='false'] .footer .footerLinks,
 .aside[data-open='false'] .footer .links {
   display: none;
 }
@@ -239,6 +240,36 @@
 .userName {
   font-size: 0.85rem;
   color: var(--color-text);
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.footerLink {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.footerLink:hover {
+  color: var(--color-accent-strong);
+  text-decoration: none;
+}
+
+.footerLinkBtn {
+  font-size: 0.85rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.footerLinkBtn:hover {
+  color: var(--color-accent-strong);
 }
 
 .links {

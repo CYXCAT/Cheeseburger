@@ -16,6 +16,8 @@ interface SidebarProps {
   history?: HistoryItem[]
   /** 当前用户展示名 */
   userName?: string
+  /** 退出登录回调 */
+  onLogout?: () => void
   /** 用户头像 URL */
   userAvatar?: string
   githubUrl?: string
@@ -29,6 +31,7 @@ export function Sidebar({
   onToggle,
   history: historyProp,
   userName = 'User',
+  onLogout,
   userAvatar,
   githubUrl = 'https://github.com/CYXCAT/Cheeseburger',
   email = 'mailto:yingxiao649@gmail.com',
@@ -138,6 +141,14 @@ export function Sidebar({
               {!userAvatar && (userName.charAt(0) || '?')}
             </div>
             <span className={styles.userName}>{userName}</span>
+          </div>
+          <div className={styles.footerLinks}>
+            <Link to="/settings" className={styles.footerLink}>{t.sidebar.settings}</Link>
+            {onLogout && (
+              <button type="button" className={styles.footerLinkBtn} onClick={onLogout}>
+                {t.auth.logout}
+              </button>
+            )}
           </div>
           <div className={styles.links}>
             <a

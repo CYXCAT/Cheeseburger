@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 
 logger = logging.getLogger(__name__)
 from openai import AsyncOpenAI
@@ -11,17 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.api.deps import get_current_user_id
 from app.repositories import KBRepository
 from app.api.schemas.llm import ChatMessage, ChatRequest, ChatResponse, CitationChunk
 from app.services.llm_tools import get_tool_definitions, execute_tool
 
 router = APIRouter()
-
-
-def _user_id(x_user_id: str | None = Header(None, alias="X-User-Id")) -> str:
-    if not x_user_id:
-        raise HTTPException(401, "Missing X-User-Id header")
-    return x_user_id.strip()
 
 
 async def _get_kb_or_404(kb_id: int, user_id: str, db: AsyncSession):
@@ -48,7 +43,7 @@ def _to_openai_messages(messages: list[ChatMessage]) -> list[dict]:
 @router.post("", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
-    user_id: str = Depends(_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_kb_or_404(body.kb_id, user_id, db)
