@@ -44,3 +44,13 @@ invite_url.txt
 pinecone-doc/
 
 /.vscode/
+
+# iOS / Xcode
+**/xcuserdata/
+**/*.xcuserstate
+**/DerivedData/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
