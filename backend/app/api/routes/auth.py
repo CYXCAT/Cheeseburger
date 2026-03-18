@@ -1,8 +1,11 @@
 """认证：注册、登录。"""
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import is_admin
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.repositories import UserRepository, InviteRepository
@@ -11,8 +14,8 @@ from app.api.schemas.auth import RegisterIn, LoginIn, UserOut
 router = APIRouter()
 
 
-def _user_out(id: int, username: str) -> UserOut:
-    return UserOut(id=id, username=username)
+def _user_out(id: int, username: str, admin: bool = False) -> UserOut:
+    return UserOut(id=id, username=username, is_admin=admin)
 
 
 @router.post("/register", response_model=dict)
@@ -32,6 +35,7 @@ async def register(
         raise HTTPException(400, "Too many failed attempts for this link, try again later")
     try:
         user = await user_repo.create(body.username.strip(), hash_password(body.password))
+        user.last_login_at = datetime.now(timezone.utc)
         invite_repo.increment_used(invite)
         await db.flush()
     except IntegrityError:
@@ -42,7 +46,7 @@ async def register(
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": _user_out(user.id, user.username),
+        "user": _user_out(user.id, user.username, is_admin(user.id)),
     }
 
 
@@ -55,9 +59,11 @@ async def login(
     user = await repo.get_by_username(body.username)
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(401, "Invalid username or password")
+    user.last_login_at = datetime.now(timezone.utc)
+    await db.flush()
     token = create_access_token(str(user.id))
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": _user_out(user.id, user.username),
+        "user": _user_out(user.id, user.username, is_admin(user.id)),
     }

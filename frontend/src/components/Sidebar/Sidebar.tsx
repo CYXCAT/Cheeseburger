@@ -16,6 +16,8 @@ interface SidebarProps {
   history?: HistoryItem[]
   /** 当前用户展示名 */
   userName?: string
+  /** 是否为管理员（显示管理入口） */
+  isAdmin?: boolean
   /** 退出登录回调 */
   onLogout?: () => void
   /** 用户头像 URL */
@@ -31,6 +33,7 @@ export function Sidebar({
   onToggle,
   history: historyProp,
   userName = 'User',
+  isAdmin = false,
   onLogout,
   userAvatar,
   githubUrl = 'https://github.com/CYXCAT/Cheeseburger',
@@ -144,6 +147,9 @@ export function Sidebar({
           </div>
           <div className={styles.footerLinks}>
             <Link to="/settings" className={styles.footerLink}>{t.sidebar.settings}</Link>
+            {isAdmin && (
+              <Link to="/admin" className={styles.footerLink}>{t.sidebar.admin}</Link>
+            )}
             {onLogout && (
               <button type="button" className={styles.footerLinkBtn} onClick={onLogout}>
                 {t.auth.logout}

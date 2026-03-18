@@ -12,6 +12,11 @@ import type {
   HistoryMessageOut,
   AuthResponse,
   UserOut,
+  AdminUserRow,
+  BillingMe,
+  LedgerEntry,
+  UsageSummary,
+  UsageEvent,
 } from './types'
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || ''
@@ -183,4 +188,29 @@ export const userApi = {
   getMe: () => request<UserOut>('/api/users/me', { method: 'GET' }),
   updateMe: (data: { username?: string; password?: string }) =>
     request<UserOut>('/api/users/me', { method: 'PATCH', body: data }),
+}
+
+/** Billing（预付费钱包） */
+export const billingApi = {
+  me: () => request<BillingMe>('/api/billing/me', { method: 'GET' }),
+  ledger: (limit = 50, offset = 0) =>
+    request<LedgerEntry[]>(`/api/billing/ledger?limit=${limit}&offset=${offset}`, { method: 'GET' }),
+  /** 管理员为指定用户充值 */
+  topup: (userId: number, amountCents: number, reason = 'topup_manual') =>
+    request<{ ok: boolean; user_id: number; new_balance_cents: number }>('/api/billing/topup', {
+      method: 'POST',
+      body: { user_id: userId, amount_cents: amountCents, reason },
+    }),
+}
+
+/** 管理员 */
+export const adminApi = {
+  listUsers: () => request<AdminUserRow[]>('/api/admin/users', { method: 'GET' }),
+}
+
+/** Usage（用量统计） */
+export const usageApi = {
+  summary: (days = 30) => request<UsageSummary>(`/api/usage/summary?days=${days}`, { method: 'GET' }),
+  events: (limit = 50, offset = 0) =>
+    request<UsageEvent[]>(`/api/usage/events?limit=${limit}&offset=${offset}`, { method: 'GET' }),
 }

@@ -1,4 +1,4 @@
-export { kbApi, docsApi, chatApi, chatHistoryApi, authApi, userApi, setAuthToken } from './client'
+export { kbApi, docsApi, chatApi, chatHistoryApi, authApi, userApi, billingApi, usageApi, adminApi, setAuthToken } from './client'
 export type {
   UserOut,
   AuthResponse,
@@ -14,4 +14,11 @@ export type {
   ToolInfo,
   ConversationOut,
   HistoryMessageOut,
+  AdminUserRow,
+  BillingMe,
+  LedgerEntry,
+  UsageDay,
+  UsageModel,
+  UsageSummary,
+  UsageEvent,
 } from './types'

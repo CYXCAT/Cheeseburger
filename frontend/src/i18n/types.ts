@@ -15,6 +15,7 @@ export interface I18nDict {
     user: string
     deleteItem: string
     settings: string
+    admin: string
   }
   chat: {
     placeholder: string
@@ -60,10 +61,29 @@ export interface I18nDict {
   }
   settings: {
     title: string
+    tabAccount: string
+    tabUsage: string
+    tabBilling: string
     username: string
     newPassword: string
     newPasswordConfirm: string
     updateSuccess: string
+    balance: string
+    currency: string
+    last30dTokens: string
+    last30dSpent: string
+    usageSummaryTitle: string
+    billingLedgerTitle: string
+    refresh: string
+    tokens: string
+    cost: string
+    model: string
+    day: string
+    amount: string
+    type: string
+    reason: string
+    time: string
+    recentUsageEventsTitle: string
   }
   manage: {
     title: string
@@ -78,5 +98,20 @@ export interface I18nDict {
     descLabel: string
     urlPlaceholder: string
     textPlaceholder: string
+  }
+  admin: {
+    title: string
+    userList: string
+    username: string
+    createdAt: string
+    lastLoginAt: string
+    requestCount: string
+    totalTokens: string
+    balance: string
+    topup: string
+    topupAmount: string
+    topupAmountCents: string
+    topupSuccess: string
+    never: string
   }
 }

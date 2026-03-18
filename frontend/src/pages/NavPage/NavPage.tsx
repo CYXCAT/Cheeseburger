@@ -30,6 +30,9 @@ export function NavPage() {
         <LangSwitch />
         <div className={styles.headerAuth}>
           <Link to="/settings" className={styles.settingsLink}>{t.sidebar.settings}</Link>
+          {user?.is_admin && (
+            <Link to="/admin" className={styles.settingsLink}>{t.sidebar.admin}</Link>
+          )}
           <span className={styles.userName}>{user?.username}</span>
           <button type="button" className={styles.logoutBtn} onClick={() => { logout(); navigate('/login', { replace: true }) }}>
             {t.auth.logout}

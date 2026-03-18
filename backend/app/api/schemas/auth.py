@@ -21,6 +21,7 @@ class TokenOut(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
+    is_admin: bool = False
 
     class Config:
         from_attributes = True

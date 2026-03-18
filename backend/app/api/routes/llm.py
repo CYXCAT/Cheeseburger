@@ -1,6 +1,7 @@
 """LLM 对话接口：用户对话 + 工具调用（检索类工具）。"""
 import json
 import logging
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.api.deps import get_current_user_id
-from app.repositories import KBRepository
+from app.repositories import BillingRepository, KBRepository, UsageRepository
 from app.api.schemas.llm import ChatMessage, ChatRequest, ChatResponse, CitationChunk
 from app.services.llm_tools import get_tool_definitions, execute_tool
 
@@ -40,6 +41,27 @@ def _to_openai_messages(messages: list[ChatMessage]) -> list[dict]:
     return [{"role": m.role, "content": m.content} for m in messages]
 
 
+def _estimate_prompt_tokens(messages: list[dict]) -> int:
+    # 粗略估算：英文约 4 chars/token；中文更接近 1~2 chars/token，但这里用保守估计便于拒绝余额不足
+    total_chars = 0
+    for m in messages:
+        c = m.get("content")
+        if isinstance(c, str):
+            total_chars += len(c)
+    return max(1, total_chars // 3)
+
+
+def _price_cents_per_1k(model: str) -> int:
+    return int(settings.model_prices_cents_per_1k.get(model, 0))
+
+
+def _cost_cents(total_tokens: int, model: str) -> int:
+    price = _price_cents_per_1k(model)
+    if price <= 0 or total_tokens <= 0:
+        return 0
+    return (total_tokens * price + 999) // 1000
+
+
 @router.post("", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
@@ -61,20 +83,65 @@ async def chat(
     if not any(m.get("role") == "system" for m in msgs):
         msgs = [{"role": "system", "content": system_msg}] + msgs
 
+    # billing：余额不足提前拒绝（基于 prompt 粗估 + completion 上限）
+    uid = int(user_id)
+    billing_repo = BillingRepository(db)
+    acct = await billing_repo.get_or_create_account(uid, currency=settings.billing_currency)
+    if settings.billing_enabled:
+        prompt_est = _estimate_prompt_tokens(msgs)
+        worst_total = prompt_est + int(settings.billing_max_completion_tokens or 0)
+        worst_cost = _cost_cents(worst_total, settings.llm_model)
+        if acct.balance_cents < worst_cost:
+            raise HTTPException(402, "Insufficient balance")
+
     last_user = next((m.get("content") for m in reversed(msgs) if m.get("role") == "user"), "")
     logger.info("chat request: kb_id=%s tools=%s last_user_len=%s last_user_preview=%s", body.kb_id, len(tools) if tools else 0, len(last_user), (last_user or "")[:200])
 
+    usage_repo = UsageRepository(db)
+    t0 = time.perf_counter()
     response = await client.chat.completions.create(
         model=settings.llm_model,
         messages=msgs,
         tools=tools if tools else None,
         tool_choice="auto" if tools else None,
+        max_tokens=settings.billing_max_completion_tokens if settings.billing_enabled else None,
     )
+    latency_ms = int((time.perf_counter() - t0) * 1000)
     choice = response.choices[0] if response.choices else None
     if not choice:
         raise HTTPException(502, "Empty model response")
 
     msg = choice.message
+    usage = getattr(response, "usage", None)
+    prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+    completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+    total_tokens = int(getattr(usage, "total_tokens", 0) or 0)
+    ev = await usage_repo.create_event(
+        user_id=uid,
+        kb_id=body.kb_id,
+        conversation_id=None,
+        model=settings.llm_model,
+        request_type="chat_first",
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        latency_ms=latency_ms,
+    )
+    if settings.billing_enabled:
+        cost = _cost_cents(total_tokens, settings.llm_model)
+        if cost > 0:
+            try:
+                await billing_repo.debit(
+                    user_id=uid,
+                    amount_cents=cost,
+                    reason="usage_debit",
+                    ref_type="llm_usage_event",
+                    ref_id=ev.id,
+                    require_sufficient_balance=True,
+                )
+            except ValueError:
+                raise HTTPException(402, "Insufficient balance")
+
     tool_calls = getattr(msg, "tool_calls", None) or []
     content_preview = (msg.content or "")[:300]
     logger.info("chat first response: has_tool_calls=%s count=%s content_preview=%s", bool(tool_calls), len(tool_calls), content_preview)
@@ -118,13 +185,45 @@ async def chat(
     for tid, content in tool_results:
         msgs.append({"role": "tool", "tool_call_id": tid, "content": content})
 
+    t1 = time.perf_counter()
     final = await client.chat.completions.create(
         model=settings.llm_model,
         messages=msgs,
+        max_tokens=settings.billing_max_completion_tokens if settings.billing_enabled else None,
     )
+    latency2_ms = int((time.perf_counter() - t1) * 1000)
     final_choice = final.choices[0] if final.choices else None
     if not final_choice:
         raise HTTPException(502, "Empty model response after tool use")
+    usage2 = getattr(final, "usage", None)
+    prompt_tokens2 = int(getattr(usage2, "prompt_tokens", 0) or 0)
+    completion_tokens2 = int(getattr(usage2, "completion_tokens", 0) or 0)
+    total_tokens2 = int(getattr(usage2, "total_tokens", 0) or 0)
+    ev2 = await usage_repo.create_event(
+        user_id=uid,
+        kb_id=body.kb_id,
+        conversation_id=None,
+        model=settings.llm_model,
+        request_type="chat_final",
+        prompt_tokens=prompt_tokens2,
+        completion_tokens=completion_tokens2,
+        total_tokens=total_tokens2,
+        latency_ms=latency2_ms,
+    )
+    if settings.billing_enabled:
+        cost2 = _cost_cents(total_tokens2, settings.llm_model)
+        if cost2 > 0:
+            try:
+                await billing_repo.debit(
+                    user_id=uid,
+                    amount_cents=cost2,
+                    reason="usage_debit",
+                    ref_type="llm_usage_event",
+                    ref_id=ev2.id,
+                    require_sufficient_balance=True,
+                )
+            except ValueError:
+                raise HTTPException(402, "Insufficient balance")
     citation_chunks = [CitationChunk(**c) for c in all_chunks] if all_chunks else None
     return ChatResponse(
         message=ChatMessage(role="assistant", content=final_choice.message.content or ""),

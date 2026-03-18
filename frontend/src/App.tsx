@@ -9,6 +9,7 @@ import { KbManagePage } from './pages/KbManagePage'
 import { LoginPage } from './pages/LoginPage/LoginPage'
 import { RegisterPage } from './pages/RegisterPage/RegisterPage'
 import { SettingsPage } from './pages/SettingsPage/SettingsPage'
+import { AdminPage } from './pages/AdminPage'
 
 function App() {
   return (
@@ -27,6 +28,9 @@ function App() {
         </Route>
         <Route path="/settings" element={<ProtectedRoute><AppLayout showSidebar={false} /></ProtectedRoute>}>
           <Route index element={<SettingsPage />} />
+        </Route>
+        <Route path="/admin" element={<ProtectedRoute><AppLayout showSidebar={false} /></ProtectedRoute>}>
+          <Route index element={<AdminPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

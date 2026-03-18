@@ -3,6 +3,7 @@
 export interface UserOut {
   id: number
   username: string
+  is_admin?: boolean
 }
 
 export interface AuthResponse {
@@ -99,4 +100,67 @@ export interface HistoryMessageOut {
   role: string
   content: string
   tool_calls?: Array<{ name?: string; arguments?: string }> | null
+}
+
+export interface BillingMe {
+  user_id: number
+  currency: string
+  balance_cents: number
+  last_30d_usage_tokens: number
+  last_30d_spent_cents: number
+}
+
+export interface LedgerEntry {
+  id: number
+  type: string
+  amount_cents: number
+  reason: string
+  ref_type?: string | null
+  ref_id?: number | null
+  created_at: string
+}
+
+export interface UsageDay {
+  day: string
+  total_tokens: number
+  cost_cents: number
+}
+
+export interface UsageModel {
+  model: string
+  total_tokens: number
+  cost_cents: number
+}
+
+export interface UsageSummary {
+  from_ts: string
+  to_ts: string
+  total_tokens: number
+  total_cost_cents: number
+  by_day: UsageDay[]
+  by_model: UsageModel[]
+}
+
+export interface UsageEvent {
+  id: number
+  kb_id?: number | null
+  model: string
+  request_type: string
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  cost_cents: number
+  latency_ms: number
+  created_at: string
+}
+
+export interface AdminUserRow {
+  user_id: number
+  username: string
+  created_at: string
+  last_login_at: string | null
+  request_count: number
+  total_tokens: number
+  balance_cents: number
+  currency: string
 }

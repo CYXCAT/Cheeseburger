@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.deps import get_current_user_id
+from app.api.deps import get_current_user_id, is_admin
 from app.repositories.user_repo import UserRepository
 from app.core.security import hash_password
 from app.api.schemas.auth import UserOut
@@ -22,7 +22,7 @@ async def get_me(
     user = await repo.get_by_id(uid)
     if not user:
         raise HTTPException(404, "User not found")
-    return UserOut(id=user.id, username=user.username)
+    return UserOut(id=user.id, username=user.username, is_admin=is_admin(uid))
 
 
 @router.patch("/me", response_model=UserOut)
@@ -45,4 +45,4 @@ async def update_me(
         user.password_hash = hash_password(body.password)
     await db.flush()
     await db.refresh(user)
-    return UserOut(id=user.id, username=user.username)
+    return UserOut(id=user.id, username=user.username, is_admin=is_admin(uid))

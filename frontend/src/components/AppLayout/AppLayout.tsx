@@ -26,6 +26,7 @@ export function AppLayout({ showSidebar = true }: AppLayoutProps) {
           open={sidebarOpen}
           onToggle={() => setSidebarOpen((o) => !o)}
           userName={user?.username ?? 'User'}
+          isAdmin={user?.is_admin ?? false}
           onLogout={handleLogout}
         />
       )}

@@ -1,5 +1,5 @@
 """知识库与版本的数据访问层，可复用。"""
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import KnowledgeBase, KBVersion, KbDocument
@@ -10,7 +10,12 @@ class KBRepository:
         self.db = db
 
     async def create_kb(self, user_id: str, name: str, description: str | None = None) -> KnowledgeBase:
-        kb = KnowledgeBase(user_id=user_id, name=name, description=description)
+        owner_user_id: int | None = None
+        try:
+            owner_user_id = int(user_id)
+        except (TypeError, ValueError):
+            owner_user_id = None
+        kb = KnowledgeBase(owner_user_id=owner_user_id, user_id=user_id, name=name, description=description)
         self.db.add(kb)
         await self.db.flush()
         # 创建初始版本
@@ -24,14 +29,28 @@ class KBRepository:
     async def get_kb(self, kb_id: int, user_id: str | None = None) -> KnowledgeBase | None:
         q = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
         if user_id is not None:
-            q = q.where(KnowledgeBase.user_id == user_id)
+            # 优先走新字段 owner_user_id；同时兼容历史字符串字段 user_id
+            try:
+                uid_int = int(user_id)
+            except (TypeError, ValueError):
+                uid_int = None
+            if uid_int is None:
+                q = q.where(KnowledgeBase.user_id == user_id)
+            else:
+                q = q.where(or_(KnowledgeBase.owner_user_id == uid_int, KnowledgeBase.user_id == user_id))
         r = await self.db.execute(q)
         return r.scalar_one_or_none()
 
     async def list_kbs(self, user_id: str) -> list[KnowledgeBase]:
-        r = await self.db.execute(
-            select(KnowledgeBase).where(KnowledgeBase.user_id == user_id).order_by(KnowledgeBase.id)
-        )
+        try:
+            uid_int = int(user_id)
+        except (TypeError, ValueError):
+            uid_int = None
+        if uid_int is None:
+            q = select(KnowledgeBase).where(KnowledgeBase.user_id == user_id)
+        else:
+            q = select(KnowledgeBase).where(or_(KnowledgeBase.owner_user_id == uid_int, KnowledgeBase.user_id == user_id))
+        r = await self.db.execute(q.order_by(KnowledgeBase.id))
         return list(r.scalars().all())
 
     async def update_kb(
