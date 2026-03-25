@@ -27,3 +27,6 @@ class ChatResponse(BaseModel):
     message: ChatMessage
     tool_calls: list[dict[str, Any]] | None = None
     citation_chunks: list[CitationChunk] | None = None
+    intent: str | None = None  # "kb" | "code" | "html"
+    code_result: dict[str, Any] | None = None  # {code, language, exit_code, result}
+    html_content: str | None = None

@@ -76,10 +76,20 @@ export interface CitationChunk {
   metadata?: Record<string, unknown>
 }
 
+export interface CodeResult {
+  code?: string
+  language?: string
+  exit_code?: number
+  result?: string
+}
+
 export interface ChatResponse {
   message: ChatMessage
   tool_calls: Array<{ name?: string; arguments?: string }> | null
   citation_chunks?: CitationChunk[] | null
+  intent?: 'kb' | 'code' | 'html'
+  code_result?: CodeResult | null
+  html_content?: string | null
 }
 
 export interface ToolInfo {

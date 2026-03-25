@@ -28,3 +28,6 @@ passlib[bcrypt]>=1.7.4
 python-jose[cryptography]>=3.3.0
 
 bcrypt==3.2.0
+
+# coding sandbox
+daytona_sdk>=0.152.0

@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # 邀请链接前端 base（仅用于 scripts/generate_invites.py 打印完整链接）
     invite_base_url: str = ""
 
+    # Daytona 沙盒（代码执行）
+    daytona_api_key: str = ""
+
     class Config:
         env_file = ".env"
         extra = "ignore"

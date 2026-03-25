@@ -65,3 +65,55 @@
 .highlightOverlay {
   pointer-events: none;
 }
+
+.codeExitCode {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.codeExitCode[data-exit='0'] {
+  color: var(--color-success, green);
+}
+
+.codeExitCode[data-exit]:not([data-exit='0']) {
+  color: var(--color-error, #c00);
+}
+
+.codeSection {
+  margin-bottom: 1rem;
+}
+
+.codeSectionTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.codeBlock,
+.codeOutput {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.codeBlock {
+  background: var(--color-bg-code, #1e1e1e);
+  color: var(--color-text-code, #d4d4d4);
+}
+
+.codeOutput {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.codeOutput[data-exit]:not([data-exit='0']) {
+  border-color: var(--color-error, #c00);
+}

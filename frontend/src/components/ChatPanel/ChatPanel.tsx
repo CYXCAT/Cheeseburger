@@ -16,15 +16,23 @@ export interface ToolCallDisplay {
   arguments?: string
 }
 
+export interface CodeResultDisplay {
+  code?: string
+  language?: string
+  exit_code?: number
+  result?: string
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   citations?: Citation[]
-  /** 本条回复所调用的工具（由后端返回，用于在对话中展示） */
   tool_calls?: ToolCallDisplay[] | null
-  /** Agent 检索返回的片段，用于左侧预览高亮 */
   citation_chunks?: Array<{ chunk_text: string; source_id?: string | null; source_type?: string | null; metadata?: Record<string, unknown> }> | null
+  intent?: 'kb' | 'code' | 'html'
+  code_result?: CodeResultDisplay | null
+  html_content?: string | null
 }
 
 interface ChatPanelProps {

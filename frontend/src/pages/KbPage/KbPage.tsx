@@ -52,19 +52,45 @@ export function KbPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [_searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [panelExpanded, setPanelExpanded] = useState(false)
 
   const messages = chat?.messages ?? []
   const setMessages = chat?.setMessages ?? (() => {})
   const loading = (chat?.loading ?? false) || sendLoading
 
-  // 当最后一条 assistant 消息带有 citation_chunks 时，左侧展示检索片段并高亮第一段
-  const lastCitationMessage = messages.slice().reverse().find((m) => m.role === 'assistant' && m.citation_chunks?.length)
+  const lastPanelMessage = messages
+    .slice()
+    .reverse()
+    .find(
+      (m) =>
+        m.role === 'assistant' &&
+        (m.citation_chunks?.length || m.code_result != null || (m.html_content != null && m.html_content.length > 0))
+    )
+
   useEffect(() => {
-    if (lastCitationMessage?.citation_chunks?.length) {
-      setDocSource(buildCitationDocSource(lastCitationMessage.citation_chunks))
+    if (!lastPanelMessage) return
+    if (lastPanelMessage.citation_chunks?.length) {
+      setDocSource(buildCitationDocSource(lastPanelMessage.citation_chunks))
       setHighlight({ selector: '#cite-0' })
+      setPanelExpanded(true)
+    } else if (lastPanelMessage.code_result != null) {
+      setDocSource({
+        type: 'code',
+        code: lastPanelMessage.code_result.code,
+        codeResult: {
+          exit_code: lastPanelMessage.code_result.exit_code ?? -1,
+          result: lastPanelMessage.code_result.result ?? '',
+          language: lastPanelMessage.code_result.language,
+        },
+      })
+      setHighlight(null)
+      setPanelExpanded(true)
+    } else if (lastPanelMessage.html_content) {
+      setDocSource({ type: 'web', html: lastPanelMessage.html_content })
+      setHighlight(null)
+      setPanelExpanded(true)
     }
-  }, [lastCitationMessage?.id, lastCitationMessage?.citation_chunks?.length])
+  }, [lastPanelMessage?.id, lastPanelMessage?.citation_chunks?.length, lastPanelMessage?.code_result, lastPanelMessage?.html_content])
 
   useEffect(() => {
     if (Number.isNaN(id)) return
@@ -90,6 +116,9 @@ export function KbPage() {
         content: res.message.content,
         tool_calls: res.tool_calls ?? undefined,
         citation_chunks: res.citation_chunks ?? undefined,
+        intent: res.intent ?? undefined,
+        code_result: res.code_result ?? undefined,
+        html_content: res.html_content ?? undefined,
       }
       setMessages((prev) => [...prev, reply])
       let convId = chat.currentConversationId
@@ -141,8 +170,8 @@ export function KbPage() {
         <LangSwitch />
       </header>
 
-      <div className={styles.layout}>
-        <div className={styles.docCol}>
+      <div className={`${styles.layout} ${panelExpanded ? styles.docColExpanded : ''}`}>
+        <div className={`${styles.docCol} ${panelExpanded ? styles.docColExpanded : ''}`}>
           <div className={styles.searchBar}>
             <input
               type="text"
@@ -155,6 +184,14 @@ export function KbPage() {
             <button type="button" className={styles.searchBtn} onClick={handleSearch} disabled={searchLoading}>
               {searchLoading ? t.common.loading : '检索'}
             </button>
+            <button
+              type="button"
+              className={styles.togglePanel}
+              onClick={() => setPanelExpanded((v) => !v)}
+              aria-label={panelExpanded ? '收起左侧面板' : '展开左侧面板'}
+            >
+              {panelExpanded ? '◀' : '▶'}
+            </button>
           </div>
           <DocumentPanel
             source={docSource}
@@ -164,6 +201,16 @@ export function KbPage() {
           />
         </div>
         <div className={styles.chatCol}>
+          {!panelExpanded && (
+            <button
+              type="button"
+              className={styles.expandPanelBtn}
+              onClick={() => setPanelExpanded(true)}
+              aria-label="展开左侧面板"
+            >
+              ▶
+            </button>
+          )}
           <ChatPanel
             messages={messages}
             onSend={handleSend}

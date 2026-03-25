@@ -16,6 +16,9 @@ from app.api.deps import get_current_user_id
 from app.repositories import BillingRepository, KBRepository, UsageRepository
 from app.api.schemas.llm import ChatMessage, ChatRequest, ChatResponse, CitationChunk
 from app.services.llm_tools import get_tool_definitions, execute_tool
+from app.services.intent_router import route as intent_route
+from app.services.agents import coding_chat, html_chat
+from app.prompts import get_kb_agent_prompt
 
 router = APIRouter()
 
@@ -70,23 +73,54 @@ async def chat(
 ):
     await _get_kb_or_404(body.kb_id, user_id, db)
     client = _openai_client()
-    tools = get_tool_definitions(body.kb_id)
-    msgs = _to_openai_messages(body.messages)
-    # 注入系统提示：强制在知识库相关问题时先调用检索，不要反问用户
-    system_msg = (
-        "你是知识库助手。你拥有检索工具：semantic_search、keyword_search、hybrid_search。\n"
-        "规则：当用户询问「文档内容」「查找数据库」「总结/叙述/介绍知识库内容」或任何与知识库资料相关的问题时，"
-        "你必须先调用其中一个检索工具（用用户原句或提取的关键词作为 query），再根据检索结果回答。"
-        "禁止先反问「请问您要查什么」「请提供具体信息」；若用户表述笼统，就用用户原句去检索。\n"
-        "只有用户明确与知识库无关（如打招呼、闲聊）时才可直接回复、不调工具。"
-    )
-    if not any(m.get("role") == "system" for m in msgs):
-        msgs = [{"role": "system", "content": system_msg}] + msgs
-
-    # billing：余额不足提前拒绝（基于 prompt 粗估 + completion 上限）
     uid = int(user_id)
     billing_repo = BillingRepository(db)
+    usage_repo = UsageRepository(db)
     acct = await billing_repo.get_or_create_account(uid, currency=settings.billing_currency)
+
+    daytona_available = bool(settings.daytona_api_key)
+    intent = await intent_route(body.messages, daytona_available=daytona_available)
+    logger.info("chat intent: %s", intent)
+
+    if intent == "code":
+        if settings.billing_enabled:
+            worst = _estimate_prompt_tokens(_to_openai_messages(body.messages)) + 2 * int(settings.billing_max_completion_tokens or 1024)
+            if acct.balance_cents < _cost_cents(worst, settings.llm_model):
+                raise HTTPException(402, "Insufficient balance")
+        resp, prompt_tok, comp_tok = await coding_chat(client, body.messages)
+        total_tok = prompt_tok + comp_tok
+        ev = await usage_repo.create_event(user_id=uid, kb_id=body.kb_id, conversation_id=None, model=settings.llm_model, request_type="chat_coding", prompt_tokens=prompt_tok, completion_tokens=comp_tok, total_tokens=prompt_tok + comp_tok, latency_ms=0)
+        if settings.billing_enabled and total_tok > 0:
+            cost = _cost_cents(total_tok, settings.llm_model)
+            if cost > 0:
+                try:
+                    await billing_repo.debit(user_id=uid, amount_cents=cost, reason="usage_debit", ref_type="llm_usage_event", ref_id=ev.id, require_sufficient_balance=True)
+                except ValueError:
+                    raise HTTPException(402, "Insufficient balance")
+        return resp
+
+    if intent == "html":
+        if settings.billing_enabled:
+            worst = _estimate_prompt_tokens(_to_openai_messages(body.messages)) + int(settings.billing_max_completion_tokens or 2048)
+            if acct.balance_cents < _cost_cents(worst, settings.llm_model):
+                raise HTTPException(402, "Insufficient balance")
+        resp, prompt_tok, comp_tok = await html_chat(client, body.messages)
+        total_tok = prompt_tok + comp_tok
+        ev = await usage_repo.create_event(user_id=uid, kb_id=body.kb_id, conversation_id=None, model=settings.llm_model, request_type="chat_html", prompt_tokens=prompt_tok, completion_tokens=comp_tok, total_tokens=total_tok, latency_ms=0)
+        if settings.billing_enabled and total_tok > 0:
+            cost = _cost_cents(total_tok, settings.llm_model)
+            if cost > 0:
+                try:
+                    await billing_repo.debit(user_id=uid, amount_cents=cost, reason="usage_debit", ref_type="llm_usage_event", ref_id=ev.id, require_sufficient_balance=True)
+                except ValueError:
+                    raise HTTPException(402, "Insufficient balance")
+        return resp
+
+    tools = get_tool_definitions(body.kb_id)
+    msgs = _to_openai_messages(body.messages)
+    if not any(m.get("role") == "system" for m in msgs):
+        msgs = [{"role": "system", "content": get_kb_agent_prompt()}] + msgs
+
     if settings.billing_enabled:
         prompt_est = _estimate_prompt_tokens(msgs)
         worst_total = prompt_est + int(settings.billing_max_completion_tokens or 0)
@@ -97,7 +131,6 @@ async def chat(
     last_user = next((m.get("content") for m in reversed(msgs) if m.get("role") == "user"), "")
     logger.info("chat request: kb_id=%s tools=%s last_user_len=%s last_user_preview=%s", body.kb_id, len(tools) if tools else 0, len(last_user), (last_user or "")[:200])
 
-    usage_repo = UsageRepository(db)
     t0 = time.perf_counter()
     response = await client.chat.completions.create(
         model=settings.llm_model,
@@ -151,6 +184,7 @@ async def chat(
             message=ChatMessage(role="assistant", content=msg.content or ""),
             tool_calls=None,
             citation_chunks=None,
+            intent="kb",
         )
 
     # 执行所有工具调用，把结果追加到对话，再请求一次 completion
@@ -229,6 +263,7 @@ async def chat(
         message=ChatMessage(role="assistant", content=final_choice.message.content or ""),
         tool_calls=[{"name": getattr(tc.function, "name", None), "arguments": getattr(tc.function, "arguments", None)} for tc in tool_calls],
         citation_chunks=citation_chunks,
+        intent="kb",
     )
 
 

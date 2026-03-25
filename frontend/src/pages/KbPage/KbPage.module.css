@@ -39,10 +39,15 @@
 .layout {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: 0 1fr;
+  gap: 0;
   min-height: 0;
   padding: 1rem;
+}
+
+.layout.docColExpanded {
+  grid-template-columns: minmax(200px, 1fr) 1fr;
+  gap: 1rem;
 }
 
 .docCol,
@@ -54,6 +59,14 @@
 .docCol {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  width: 0;
+  transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.docCol.docColExpanded {
+  width: auto;
+  min-width: 200px;
 }
 
 .searchBar {
@@ -93,9 +106,48 @@
   cursor: not-allowed;
 }
 
+.togglePanel {
+  flex-shrink: 0;
+  width: 2rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.togglePanel:hover {
+  background: var(--color-surface-hover);
+}
+
 .chatCol {
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.expandPanelBtn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: 1.5rem;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.7rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.expandPanelBtn:hover {
+  background: var(--color-surface-hover);
 }
 
 @media (max-width: 1023px) {

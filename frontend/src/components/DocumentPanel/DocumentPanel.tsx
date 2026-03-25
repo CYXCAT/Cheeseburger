@@ -6,16 +6,23 @@ import styles from './DocumentPanel.module.css'
 // 使用 jsdelivr 的 legacy worker（MIME 正确），避免 unpkg 返回非 script 类型导致被拒绝执行
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`
 
-export type DocType = 'pdf' | 'web'
+export type DocType = 'pdf' | 'web' | 'code'
+
+export interface CodeResultDisplay {
+  exit_code: number
+  result: string
+  language?: string
+}
 
 export interface DocSource {
   type: DocType
-  /** PDF 的 URL 或网页快照的 URL / HTML 片段标识 */
   url?: string
-  /** 网页快照的 HTML（用于 iframe srcdoc 或直接渲染） */
   html?: string
-  /** 总页数（PDF）或锚点列表（web） */
   totalPages?: number
+  /** 代码模式：源码 */
+  code?: string
+  /** 代码模式：执行结果 */
+  codeResult?: CodeResultDisplay
 }
 
 export interface HighlightRegion {
@@ -61,6 +68,39 @@ export function DocumentPanel({
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [highlight?.pageNumber])
+
+  if (source.type === 'code') {
+    const code = source.code ?? ''
+    const res = source.codeResult
+    return (
+      <div className={styles.wrap}>
+        <div className={styles.toolbar}>
+          <span className={styles.label}>代码执行</span>
+          {res != null && (
+            <span className={styles.codeExitCode} data-exit={res.exit_code}>
+              exit {res.exit_code}
+            </span>
+          )}
+        </div>
+        <div className={styles.scroll}>
+          {code && (
+            <section className={styles.codeSection}>
+              <div className={styles.codeSectionTitle}>代码</div>
+              <pre className={styles.codeBlock}>{code}</pre>
+            </section>
+          )}
+          {res != null && (
+            <section className={styles.codeSection}>
+              <div className={styles.codeSectionTitle}>输出</div>
+              <pre className={styles.codeOutput} data-exit={res.exit_code}>
+                {res.result || '(无输出)'}
+              </pre>
+            </section>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   if (source.type === 'pdf') {
     const hasPdfUrl = Boolean(source.url)
