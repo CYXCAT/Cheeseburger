@@ -168,7 +168,8 @@ export function DocumentPanel({
           className={styles.iframe}
           srcDoc={source.html || undefined}
           src={source.url && !source.html ? source.url : undefined}
-          sandbox="allow-same-origin"
+          // 生成式 HTML 预览需运行脚本与表单；与 allow-same-origin 同用时请注意内容来源（仅预览可信/模型输出）
+          sandbox="allow-scripts allow-forms allow-same-origin"
         />
         {highlight?.selector && (
           <div

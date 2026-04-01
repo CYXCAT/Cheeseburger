@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     # Daytona 沙盒（代码执行）
     daytona_api_key: str = ""
 
+    # Planner / 编排（Plan-and-Execute）
+    planner_max_steps: int = 6
+    code_max_sandbox_retries: int = 2  # 沙箱非零退出后，除首次外最多再试次数
+    orchestration_max_replan: int = 2
+    # 编排 while 最大迭代次数（含再规划插入的新步），防止异常路径死循环
+    orchestration_max_loop_iterations: int = 48
+    planner_max_completion_tokens: int = 1024
+    # 为 True 或 debug=True 时开放 POST /api/chat/planner-debug（仅本地/排障，生产请关）
+    planner_debug_enabled: bool = False
+
     class Config:
         env_file = ".env"
         extra = "ignore"

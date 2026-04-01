@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { LangSwitch } from '../../components/LangSwitch'
@@ -38,6 +38,56 @@ function buildCitationDocSource(
   return { type: 'web', html }
 }
 
+/** 与 Message 对齐的双视图类型（检索 / 代码 / HTML 预览） */
+type DualPaneKind = 'citation' | 'code' | 'html'
+
+interface DualPreviewConfig {
+  panes: [DualPaneKind, DualPaneKind]
+}
+
+function getDualPreview(msg: Message | undefined): DualPreviewConfig | null {
+  if (!msg || msg.role !== 'assistant') return null
+  const hasC = Boolean(msg.citation_chunks?.length)
+  const hasCo = msg.code_result != null
+  const hasH = Boolean(msg.html_content && msg.html_content.length > 0)
+  if (hasC && hasCo) return { panes: ['citation', 'code'] }
+  if (hasC && hasH) return { panes: ['citation', 'html'] }
+  if (hasCo && hasH) return { panes: ['code', 'html'] }
+  return null
+}
+
+function docSourceForPane(kind: DualPaneKind, msg: Message): DocSource {
+  if (kind === 'citation' && msg.citation_chunks?.length) {
+    return buildCitationDocSource(msg.citation_chunks)
+  }
+  if (kind === 'code' && msg.code_result != null) {
+    return {
+      type: 'code',
+      code: msg.code_result.code,
+      codeResult: {
+        exit_code: msg.code_result.exit_code ?? -1,
+        result: msg.code_result.result ?? '',
+        language: msg.code_result.language,
+      },
+    }
+  }
+  if (kind === 'html' && msg.html_content) {
+    return { type: 'web', html: msg.html_content }
+  }
+  return defaultDocSource
+}
+
+function paneLabel(kind: DualPaneKind, doc: { citationView: string; codeView: string; htmlView: string }): string {
+  switch (kind) {
+    case 'citation':
+      return doc.citationView
+    case 'code':
+      return doc.codeView
+    case 'html':
+      return doc.htmlView
+  }
+}
+
 export function KbPage() {
   const { kbId } = useParams<{ kbId: string }>()
   const navigate = useNavigate()
@@ -53,6 +103,10 @@ export function KbPage() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [_searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [panelExpanded, setPanelExpanded] = useState(false)
+  /** 双视图：单屏切换 vs 上下分屏 */
+  const [dualLayout, setDualLayout] = useState<'toggle' | 'split'>('toggle')
+  /** 单屏模式下当前显示的视图索引 0 | 1 */
+  const [dualIndex, setDualIndex] = useState(0)
 
   const messages = chat?.messages ?? []
   const setMessages = chat?.setMessages ?? (() => {})
@@ -67,8 +121,21 @@ export function KbPage() {
         (m.citation_chunks?.length || m.code_result != null || (m.html_content != null && m.html_content.length > 0))
     )
 
+  const dualConfig = useMemo(() => getDualPreview(lastPanelMessage), [lastPanelMessage])
+
+  useEffect(() => {
+    if (dualConfig) {
+      setDualLayout('toggle')
+      setDualIndex(0)
+    }
+  }, [lastPanelMessage?.id, dualConfig])
+
   useEffect(() => {
     if (!lastPanelMessage) return
+    if (getDualPreview(lastPanelMessage)) {
+      setPanelExpanded(true)
+      return
+    }
     if (lastPanelMessage.citation_chunks?.length) {
       setDocSource(buildCitationDocSource(lastPanelMessage.citation_chunks))
       setHighlight({ selector: '#cite-0' })
@@ -119,6 +186,8 @@ export function KbPage() {
         intent: res.intent ?? undefined,
         code_result: res.code_result ?? undefined,
         html_content: res.html_content ?? undefined,
+        plan_summary: res.plan_summary ?? undefined,
+        execution_trace: res.execution_trace ?? undefined,
       }
       setMessages((prev) => [...prev, reply])
       let convId = chat.currentConversationId
@@ -193,12 +262,93 @@ export function KbPage() {
               {panelExpanded ? '◀' : '▶'}
             </button>
           </div>
-          <DocumentPanel
-            source={docSource}
-            highlight={highlight}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-          />
+          {dualConfig && lastPanelMessage ? (
+            <div className={styles.dualRoot}>
+              <div className={styles.dualToolbar}>
+                {dualLayout === 'toggle' ? (
+                  <div className={styles.dualPager}>
+                    <button
+                      type="button"
+                      className={styles.dualPagerBtn}
+                      aria-label={t.doc.prevPane}
+                      onClick={() => setDualIndex((i) => (i - 1 + 2) % 2)}
+                    >
+                      ◀
+                    </button>
+                    <div className={styles.dualSegments}>
+                      <button
+                        type="button"
+                        className={styles.dualSeg}
+                        data-active={dualIndex === 0}
+                        onClick={() => setDualIndex(0)}
+                      >
+                        {paneLabel(dualConfig.panes[0], t.doc)}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.dualSeg}
+                        data-active={dualIndex === 1}
+                        onClick={() => setDualIndex(1)}
+                      >
+                        {paneLabel(dualConfig.panes[1], t.doc)}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.dualPagerBtn}
+                      aria-label={t.doc.nextPane}
+                      onClick={() => setDualIndex((i) => (i + 1) % 2)}
+                    >
+                      ▶
+                    </button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className={styles.dualSplitBtn}
+                  onClick={() => setDualLayout((L) => (L === 'split' ? 'toggle' : 'split'))}
+                >
+                  {dualLayout === 'split' ? t.doc.singleView : t.doc.splitView}
+                </button>
+              </div>
+              {dualLayout === 'split' ? (
+                <div className={styles.dualSplitWrap}>
+                  <div className={styles.dualSplitPane}>
+                    <DocumentPanel
+                      source={docSourceForPane(dualConfig.panes[0], lastPanelMessage)}
+                      highlight={dualConfig.panes[0] === 'citation' ? highlight : null}
+                      currentPage={currentPage}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                  <div className={styles.dualSplitPane}>
+                    <DocumentPanel
+                      source={docSourceForPane(dualConfig.panes[1], lastPanelMessage)}
+                      highlight={dualConfig.panes[1] === 'citation' ? highlight : null}
+                      currentPage={currentPage}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.dualSinglePane}>
+                  <DocumentPanel
+                    source={docSourceForPane(dualConfig.panes[dualIndex], lastPanelMessage)}
+                    highlight={dualConfig.panes[dualIndex] === 'citation' ? highlight : null}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <DocumentPanel
+              source={docSource}
+              highlight={highlight}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </div>
         <div className={styles.chatCol}>
           {!panelExpanded && (

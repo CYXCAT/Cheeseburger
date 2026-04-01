@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useI18n } from '../../i18n'
+import type { ExecutionStepTrace } from '../../api/types'
 import type { HighlightRegion } from '../DocumentPanel'
 import styles from './ChatPanel.module.css'
 
@@ -30,9 +31,11 @@ export interface Message {
   citations?: Citation[]
   tool_calls?: ToolCallDisplay[] | null
   citation_chunks?: Array<{ chunk_text: string; source_id?: string | null; source_type?: string | null; metadata?: Record<string, unknown> }> | null
-  intent?: 'kb' | 'code' | 'html'
+  intent?: 'kb' | 'code' | 'html' | 'multi'
   code_result?: CodeResultDisplay | null
   html_content?: string | null
+  plan_summary?: string | null
+  execution_trace?: ExecutionStepTrace[] | null
 }
 
 interface ChatPanelProps {
@@ -78,6 +81,30 @@ export function ChatPanel({
             data-role={msg.role}
           >
             <div className={styles.bubble}>
+              {msg.role === 'assistant' && (msg.plan_summary || (msg.execution_trace && msg.execution_trace.length > 0)) && (
+                <details className={styles.orchestration}>
+                  <summary className={styles.orchestrationSummary}>{t.chat.executionTrace}</summary>
+                  {msg.plan_summary ? (
+                    <p className={styles.planSummaryText}>
+                      <span className={styles.traceMeta}>{t.chat.planSummary}: </span>
+                      {msg.plan_summary}
+                    </p>
+                  ) : null}
+                  {msg.execution_trace && msg.execution_trace.length > 0 ? (
+                    <ul className={styles.traceList}>
+                      {msg.execution_trace.map((tr, ti) => (
+                        <li key={`${tr.step_id}-${ti}`} className={styles.traceStep} data-status={tr.status}>
+                          <span className={styles.traceMeta}>
+                            {t.chat.stepKind} {tr.kind} · #{tr.step_id}
+                          </span>
+                          <span className={styles.traceStatus}> · {tr.status}</span>
+                          {tr.summary ? <div>{tr.summary}</div> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </details>
+              )}
               {msg.role === 'assistant' && msg.tool_calls && msg.tool_calls.length > 0 && (
                 <div className={styles.toolCalls}>
                   <span className={styles.toolCallsLabel}>{t.chat.toolCallsLabel}</span>

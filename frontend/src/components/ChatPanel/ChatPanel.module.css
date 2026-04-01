@@ -120,6 +120,65 @@
   font-style: italic;
 }
 
+.orchestration {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 0.8rem;
+}
+
+.orchestrationSummary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  list-style: none;
+}
+
+.orchestrationSummary::-webkit-details-marker {
+  display: none;
+}
+
+.planSummaryText {
+  margin: 0.5rem 0 0.35rem;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.traceList {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  list-style: disc;
+}
+
+.traceStep {
+  margin: 0.25rem 0;
+  line-height: 1.4;
+}
+
+.traceMeta {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.traceStatus {
+  margin-left: 0.35rem;
+  font-weight: 600;
+}
+
+.traceStep[data-status='done'] .traceStatus {
+  color: var(--color-accent-strong);
+}
+
+.traceStep[data-status='failed'] .traceStatus {
+  color: #b42318;
+}
+
+.traceStep[data-status='skipped'] .traceStatus {
+  color: var(--color-text-muted);
+}
+
 .form {
   flex-shrink: 0;
   display: flex;

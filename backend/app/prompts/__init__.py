@@ -26,6 +26,15 @@ def get_html_agent_prompt() -> str:
     return _load("html_agent")
 
 
+def get_planner_prompt(*, max_steps: int) -> str:
+    # 必须用 replace，不能用 str.format：prompt 内含 JSON 示例花括号，会与 format 占位符冲突
+    return _load("planner").replace("{max_steps}", str(max_steps))
+
+
+def get_replanner_prompt(*, max_steps: int) -> str:
+    return _load("replanner").replace("{max_steps}", str(max_steps))
+
+
 # 工具定义（结构化，保留在代码中；若需可插拔可再拆为 JSON）
 CODE_RUN_TOOL = {
     "type": "function",
@@ -48,5 +57,7 @@ __all__ = [
     "get_kb_agent_prompt",
     "get_coding_agent_prompt",
     "get_html_agent_prompt",
+    "get_planner_prompt",
+    "get_replanner_prompt",
     "CODE_RUN_TOOL",
 ]

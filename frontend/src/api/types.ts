@@ -83,13 +83,24 @@ export interface CodeResult {
   result?: string
 }
 
+export type ExecutionStepStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped'
+
+export interface ExecutionStepTrace {
+  step_id: string
+  kind: string
+  status: ExecutionStepStatus
+  summary?: string
+}
+
 export interface ChatResponse {
   message: ChatMessage
   tool_calls: Array<{ name?: string; arguments?: string }> | null
   citation_chunks?: CitationChunk[] | null
-  intent?: 'kb' | 'code' | 'html'
+  intent?: 'kb' | 'code' | 'html' | 'multi'
   code_result?: CodeResult | null
   html_content?: string | null
+  plan_summary?: string | null
+  execution_trace?: ExecutionStepTrace[] | null
 }
 
 export interface ToolInfo {

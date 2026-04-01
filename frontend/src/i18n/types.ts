@@ -24,11 +24,21 @@ export interface I18nDict {
     source: string
     jumpToDoc: string
     toolCallsLabel: string
+    planSummary: string
+    executionTrace: string
+    stepKind: string
   }
   doc: {
     pdf: string
     webSnapshot: string
     page: string
+    citationView: string
+    codeView: string
+    htmlView: string
+    splitView: string
+    singleView: string
+    prevPane: string
+    nextPane: string
   }
   common: {
     back: string
