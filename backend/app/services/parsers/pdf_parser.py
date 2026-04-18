@@ -1,11 +1,6 @@
 """PDF 解析：提取纯文本并分块。"""
-import io
 from .base import BaseParser, ParsedChunk
-
-try:
-    import pdfplumber
-except ImportError:
-    pdfplumber = None
+from .pdf_text_extract import extract_pdf_plain_text
 
 
 class PDFParser(BaseParser):
@@ -44,15 +39,7 @@ class PDFParser(BaseParser):
         return chunks
 
     def parse(self, raw: bytes | str, source_id: str) -> list[ParsedChunk]:
-        if pdfplumber is None:
-            raise RuntimeError("pdfplumber is required for PDF parsing")
         if isinstance(raw, str):
             raw = raw.encode("utf-8")
-        fp = io.BytesIO(raw)
-        full_text: list[str] = []
-        with pdfplumber.open(fp) as pdf:
-            for page in pdf.pages:
-                t = page.extract_text()
-                if t:
-                    full_text.append(t)
-        return self._chunk_text("\n\n".join(full_text), source_id)
+        text = extract_pdf_plain_text(raw)
+        return self._chunk_text(text, source_id)

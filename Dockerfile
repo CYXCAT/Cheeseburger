@@ -13,9 +13,11 @@ RUN npm run build
 # 阶段二：运行时（Python + nginx，同镜像内跑后端与前端）
 FROM python:3.12-slim
 
+# openjdk：后端 PDF 解析 opendataloader-pdf 需要 Java 11+（与 backend/Dockerfile 一致）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     curl \
+    openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default
 

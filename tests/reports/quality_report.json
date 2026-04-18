@@ -1,0 +1,8 @@
+{
+  "junit": null,
+  "line_coverage_percent": null,
+  "risk": {
+    "level": "中",
+    "detail": "未读取到覆盖率数据，请确认已生成 coverage.xml。"
+  }
+}

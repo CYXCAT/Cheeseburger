@@ -7,6 +7,7 @@ venv/
 env/
 ENV/
 .venv
+.venv-test/
 *.egg-info/
 dist/
 build/
@@ -43,7 +44,15 @@ invite_url.txt
 
 pinecone-doc/
 
+# PDF 对比测试生成物
+test-pdf/out/
+
 /.vscode/
+
+# Python 测试与覆盖率产物
+backend/tests/reports/
+backend/.coverage
+backend/htmlcov/
 
 # iOS / Xcode
 **/xcuserdata/

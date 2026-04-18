@@ -3,9 +3,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# 系统依赖（如需 PDF/网络解析可保留）
+# 系统依赖：curl + OpenDataLoader PDF 所需 JRE
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # 先复制依赖文件，利用层缓存
